@@ -127,6 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
         "type": "image"
     },
     {
+        "src": "organized/2025-09-05/P9050016.MOV",
+        "date": "2025-09-05",
+        "type": "video"
+    },
+    {
         "src": "organized/2025-09-05/P9050018.JPG",
         "date": "2025-09-05",
         "type": "image"
