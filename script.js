@@ -1,16 +1,17 @@
+// -----------------------------
+// script.js (reemplazar completo)
+// -----------------------------
 document.addEventListener('DOMContentLoaded', () => {
-    const passwordInput = document.getElementById('password-input');
-    const submitBtn = document.getElementById('submit-btn');
-    const errorMessage = document.getElementById('error-message');
-    const loginSection = document.getElementById('login-section');
-    const gallerySection = document.getElementById('gallery-section');
-    const galleryContainer = document.getElementById('gallery-container');
+  // ---------- LOGIN ----------
+  const passwordInput = document.getElementById('password-input') || document.getElementById('password');
+  const submitBtn = document.getElementById('submit-btn') || document.getElementById('submit-button') || document.querySelector('button[type="submit"]');
+  const errorMessage = document.getElementById('error-message');
+  const errorCountElem = document.getElementById('error-count');
+  const loginSection = document.getElementById('login-section') || document.getElementById('login-container');
+  const gallerySection = document.getElementById('gallery-section') || document.getElementById('gallery-container');
 
-    // 🔐 Contraseñas válidas
-    const validPasswords = ["elite", "autismo severo", "autismosevero"];
-
-    // 💀 Mensajes de error aleatorios
-    const incorrectMessages = [
+  const validPasswords = ["elite", "autismo severo", "autismosevero"];
+  const incorrectMessages = [
         "Fallaste, perro",
         "Error 666: ЖОПА УНИЧТОЖЕНА (CULO DESTRUIDO).",
         "Жопометр: 0% точности.",
@@ -36,26 +37,45 @@ document.addEventListener('DOMContentLoaded', () => {
         "Oriana, que hiciste...",
         "Jade, ¿y pinkie pie?",
         "Lara confundió la realidad con un videojuego y desinstaló tu vida.",
-        "Iker! -¿que?, ¡AHHH!"
-    ];
+        "Iker! -¿que?, ¡AHHH!",
+    // ... puedes mantener tu lista original aquí ...
+  ];
 
-    // 🔘 Evento del botón de acceso
-    submitBtn.addEventListener('click', () => {
-        const userPassword = passwordInput.value.trim().toLowerCase();
+  if (submitBtn && passwordInput) {
+    submitBtn.addEventListener('click', (e) => {
+      if (e) e.preventDefault && e.preventDefault();
+      const pw = (passwordInput.value || '').trim().toLowerCase();
+      if (!window.failedAttempts) window.failedAttempts = 0;
 
-        if (validPasswords.includes(userPassword)) {
-            loginSection.classList.add('hidden');
-            gallerySection.classList.remove('hidden');
-            loadGallery();
-        } else {
-            const randomMsg = incorrectMessages[Math.floor(Math.random() * incorrectMessages.length)];
-            errorMessage.textContent = randomMsg;
-            errorMessage.classList.remove('hidden');
+      if (validPasswords.includes(pw)) {
+        if (loginSection) loginSection.style.display = 'none';
+        if (gallerySection) gallerySection.style.display = 'block';
+        if (errorMessage) errorMessage.textContent = '';
+        loadGallery();
+      } else {
+        window.failedAttempts++;
+        const msg = incorrectMessages[Math.floor(Math.random() * incorrectMessages.length)];
+        if (errorMessage) {
+          errorMessage.textContent = msg;
+          errorMessage.style.opacity = 1;
         }
+        if (errorCountElem) {
+          if (window.failedAttempts >= 3 && window.failedAttempts < 5) errorCountElem.textContent = `Has fallado ${window.failedAttempts} veces.`;
+          else if (window.failedAttempts >= 5) errorCountElem.textContent = 'Último intento antes del bloqueo.';
+        }
+        setTimeout(() => { if (errorMessage) errorMessage.style.opacity = 0; }, 2000);
+      }
     });
+  }
 
-    // 🎞️ Archivos multimedia (esto será reemplazado automáticamente por tu script de Node)
-    const mediaFiles = [
+  // ---------- MEDIA FILES ----------
+  // Tu generator o lista debe poblar window.mediaFiles o puedes ponerla aquí:
+  // Ejemplo (descomenta y edita si quieres):
+  // window.mediaFiles = [
+  //   { src: "organized/2025-09-05/IMG_001.PNG", date: "2025-09-05", type: "image" },
+  //   { src: "organized/2025-09-05/VID_001.MOV", date: "2025-09-05", type: "video" }
+  // ];
+  const mediaFiles = [
     {
         "src": "organized/2025-07-24/P7240001.JPG",
         "date": "2025-07-24",
@@ -2586,125 +2606,213 @@ document.addEventListener('DOMContentLoaded', () => {
         "date": "2025-10-03",
         "type": "image"
     }
-];
+]; // deja que tu generador ponga window.mediaFiles
 
-    // 🧩 Agrupa por fecha
-    function groupByDate(files) {
-        const groups = {};
-        files.forEach(file => {
-            if (!groups[file.date]) groups[file.date] = [];
-            groups[file.date].push(file);
+  // ---------- GALLERY RENDER ----------
+  const galleryContainer = document.getElementById('gallery') || document.getElementById('gallery-container');
+
+  function loadGallery() {
+    if (!galleryContainer) return;
+    // agrupar por fecha
+    const groups = {};
+    mediaFiles.forEach(f => {
+      const d = f.date || 'Sin Fecha';
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(f);
+    });
+
+    galleryContainer.innerHTML = '';
+
+    // ordenar fechas (opcional: orden descendente)
+    const dates = Object.keys(groups).sort((a,b) => a < b ? 1 : -1);
+
+    dates.forEach(date => {
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'date-group';
+
+      const title = document.createElement('h3');
+      title.textContent = date;
+      groupDiv.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.className = 'media-grid';
+
+      groups[date].forEach(media => {
+        const item = document.createElement('div');
+        item.className = 'media-item';
+
+        // crear thumbnail
+        let el;
+        if (media.type === 'video') {
+          el = document.createElement('video');
+          el.src = media.src;
+          el.muted = true;
+          el.preload = 'metadata';
+        } else {
+          el = document.createElement('img');
+          el.src = media.src;
+          el.alt = media.src;
+          el.loading = 'lazy';
+        }
+
+        // inicializar estado para transform (rotación / escala)
+        el.dataset.rotation = el.dataset.rotation || "0";
+        el.dataset.scale = el.dataset.scale || "1";
+
+        el.classList.add('thumbnail');
+
+        // aplicar transform centralizado
+        function applyTransform(elm) {
+          const rot = parseInt(elm.dataset.rotation || "0", 10);
+          const scale = parseFloat(elm.dataset.scale || "1");
+          elm.style.transform = `rotate(${rot}deg) scale(${scale})`;
+          elm.style.transition = "transform 0.25s ease";
+        }
+        applyTransform(el);
+
+        // click en miniatura -> abrir visor
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          // pasar también rot/scale actual a overlay
+          const mediaForOverlay = {
+            src: media.src,
+            type: media.type,
+            rotation: parseInt(el.dataset.rotation || "0", 10),
+            scale: parseFloat(el.dataset.scale || "1")
+          };
+          openZoomViewer(mediaForOverlay);
         });
-        return groups;
-    }
 
-    // 🖼️ Carga la galería
-    function loadGallery() {
-        const grouped = groupByDate(mediaFiles);
-        galleryContainer.innerHTML = "";
+        item.appendChild(el);
 
-        Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a)).forEach(date => {
-            const groupDiv = document.createElement("div");
-            groupDiv.className = "date-group";
-
-            const title = document.createElement("h3");
-            title.textContent = new Date(date).toLocaleDateString("es-ES", {
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-            });
-
-            const grid = document.createElement("div");
-            grid.className = "media-grid";
-
-            grouped[date].forEach(item => {
-                const div = document.createElement("div");
-                div.className = "media-item";
-
-                if (item.type === "image") {
-                    const img = document.createElement("img");
-                    img.src = item.src;
-                    div.appendChild(img);
-                } else if (item.type === "video") {
-                    const vid = document.createElement("video");
-                    vid.src = item.src;
-                    vid.controls = true;
-                    div.appendChild(vid);
-                }
-
-                grid.appendChild(div);
-            });
-
-            groupDiv.appendChild(title);
-            groupDiv.appendChild(grid);
-            galleryContainer.appendChild(groupDiv);
+        // botón rotar
+        const rotateBtn = document.createElement('button');
+        rotateBtn.className = 'rotate-btn';
+        rotateBtn.textContent = '⟳';
+        rotateBtn.title = 'Rotar 90°';
+        rotateBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          let rot = parseInt(el.dataset.rotation || "0", 10);
+          rot = (rot + 90) % 360;
+          el.dataset.rotation = String(rot);
+          applyTransform(el);
         });
-    }
-});
 
-// =====================
-// VISOR DE IMÁGENES Y VIDEOS (ZOOM)
-// =====================
+        item.appendChild(rotateBtn);
+        grid.appendChild(item);
+      });
 
-function openZoomViewer(src, type) {
-  const overlay = document.createElement("div");
-  overlay.style.position = "fixed";
-  overlay.style.top = "0";
-  overlay.style.left = "0";
-  overlay.style.width = "100vw";
-  overlay.style.height = "100vh";
-  overlay.style.background = "rgba(0, 0, 0, 0.9)";
-  overlay.style.display = "flex";
-  overlay.style.alignItems = "center";
-  overlay.style.justifyContent = "center";
-  overlay.style.zIndex = "9999";
-  overlay.style.backdropFilter = "blur(2px)";
-
-  const close = document.createElement("span");
-  close.textContent = "✕";
-  close.style.position = "absolute";
-  close.style.top = "20px";
-  close.style.right = "30px";
-  close.style.fontSize = "32px";
-  close.style.color = "white";
-  close.style.cursor = "pointer";
-  close.style.fontWeight = "bold";
-
-  let media;
-  if (type === "video") {
-    media = document.createElement("video");
-    media.src = src;
-    media.controls = true;
-    media.autoplay = true;
-    media.style.maxWidth = "90vw";
-    media.style.maxHeight = "90vh";
-    media.style.borderRadius = "10px";
-    media.style.boxShadow = "0 0 25px rgba(255,255,255,0.3)";
-  } else {
-    media = document.createElement("img");
-    media.src = src;
-    media.style.maxWidth = "90vw";
-    media.style.maxHeight = "90vh";
-    media.style.cursor = "zoom-in";
-    media.style.borderRadius = "10px";
-    media.style.boxShadow = "0 0 25px rgba(255,255,255,0.3)";
-
-    // efecto de zoom al hacer clic
-    let zoom = 1;
-    media.addEventListener("click", (e) => {
-      zoom += 0.25;
-      if (zoom > 2.5) zoom = 1;
-      media.style.transform = `scale(${zoom})`;
-      media.style.transition = "transform 0.3s ease";
-      e.stopPropagation();
+      groupDiv.appendChild(grid);
+      galleryContainer.appendChild(groupDiv);
     });
   }
 
-  overlay.appendChild(media);
-  overlay.appendChild(close);
-  document.body.appendChild(overlay);
+  // ---------- VISOR / ZOOM ----------
+  // mediaForOverlay: { src, type, rotation, scale }
+  function openZoomViewer(mediaForOverlay) {
+    const { src, type, rotation = 0, scale: initialScale = 1 } = mediaForOverlay;
 
-  // Cerrar al hacer clic afuera o en la X
-  overlay.addEventListener("click", () => overlay.remove());
-  close.addEventListener("click", () => overlay.remove());
-}
+    // overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'zoom-viewer-overlay';
+    overlay.style.cursor = 'zoom-out';
+
+    const content = document.createElement('div');
+    content.id = 'zoom-viewer-content';
+
+    const closeBtn = document.createElement('div');
+    closeBtn.id = 'zoom-viewer-close';
+    closeBtn.textContent = '✕';
+
+    // crear media
+    const mediaEl = document.createElement(type === 'video' ? 'video' : 'img');
+    mediaEl.src = src;
+    if (type === 'video') {
+      mediaEl.controls = true;
+      mediaEl.autoplay = true;
+    }
+    mediaEl.className = 'zoom-media';
+    // aplicar rot/scale inicial
+    mediaEl.style.transformOrigin = 'center center';
+    mediaEl.style.transform = `rotate(${rotation}deg) scale(${initialScale})`;
+
+    // tracking escala/rotacion local en overlay
+    let scale = initialScale;
+    let rot = rotation;
+
+    // click para zoom (incremental)
+    mediaEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      scale += 0.25;
+      if (scale > 3) scale = 1;
+      mediaEl.style.transform = `rotate(${rot}deg) scale(${scale})`;
+    });
+
+    // rueda para zoom
+    overlay.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY;
+      if (delta < 0) scale += 0.08; else scale -= 0.08;
+      if (scale < 1) scale = 1;
+      if (scale > 4) scale = 4;
+      mediaEl.style.transform = `rotate(${rot}deg) scale(${scale})`;
+    }, { passive: false });
+
+    // touch pinch (simple)
+    let initialDistance = 0;
+    overlay.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialDistance = Math.sqrt(dx*dx + dy*dy);
+      }
+    }, { passive: true });
+
+    overlay.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const newDistance = Math.sqrt(dx*dx + dy*dy);
+        const diff = newDistance - initialDistance;
+        scale += diff / 400;
+        initialDistance = newDistance;
+        if (scale < 1) scale = 1;
+        if (scale > 4) scale = 4;
+        mediaEl.style.transform = `rotate(${rot}deg) scale(${scale})`;
+      }
+    }, { passive: false });
+
+    // soportar rotar dentro del overlay (opcional: botón)
+    const overlayRotateBtn = document.createElement('button');
+    overlayRotateBtn.className = 'rotate-btn overlay-rotate';
+    overlayRotateBtn.textContent = '⟳';
+    overlayRotateBtn.title = 'Rotar 90°';
+    overlayRotateBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      rot = (rot + 90) % 360;
+      mediaEl.style.transform = `rotate(${rot}deg) scale(${scale})`;
+    });
+
+    // cerrar al click fuera o en botón
+    closeBtn.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (ev) => {
+      if (ev.target === overlay) overlay.remove();
+    });
+
+    // montar
+    content.appendChild(mediaEl);
+    overlay.appendChild(content);
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(overlayRotateBtn);
+    document.body.appendChild(overlay);
+  }
+
+  // export en window para debugging o uso externo
+  window.openZoomViewer = openZoomViewer;
+  window.loadGallery = loadGallery;
+
+  // si la galería debe cargarse automáticamente (si ya pasó el login)
+  if ((gallerySection && gallerySection.style.display === 'block') || (document.body.contains(galleryContainer) && galleryContainer.childElementCount === 0)) {
+    loadGallery();
+  }
+}); // DOMContentLoaded end
